@@ -150,30 +150,113 @@ window.openPIDModal = async function() {
   modalEl.style.display = 'flex';
 };
 
+// ─── CARGA LOCAL DE ARCHIVO (cliente, sin backend) ──────────────
+window.loadPIDFromLocalFile = function(file) {
+  if (!file) return;
+  const container = document.getElementById('pidContainer');
+  if (!container) return;
+
+  const name = file.name || 'archivo';
+  const ext  = name.split('.').pop().toLowerCase();
+  const label = document.getElementById('pidLabel');
+
+  if (ext === 'svg') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      container.innerHTML = e.target.result;
+      const svgEl = container.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.width = '100%';
+        svgEl.style.height = '100%';
+        svgEl.style.maxHeight = 'calc(100vh - 200px)';
+        svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        _addSVGPanZoom(svgEl);
+      } else {
+        container.innerHTML = `<div style="padding:24px;color:var(--danger,#dc3545)">El archivo no contiene un &lt;svg&gt; válido.</div>`;
+      }
+      window._pidCurrentFile = name;
+      if (label) label.textContent = name;
+      if (typeof window.showNotif === 'function') window.showNotif(`P&ID "${name}" cargado`, 'success');
+    };
+    reader.onerror = () => window.showNotif?.('Error leyendo el archivo', 'danger');
+    reader.readAsText(file);
+
+  } else if (ext === 'dwg' || ext === 'dxf') {
+    // Los navegadores no pueden renderizar DWG/DXF de forma nativa.
+    const sizeKB = (file.size / 1024).toFixed(1);
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:340px;padding:32px;text-align:center;color:var(--text-secondary)">
+        <div style="font-size:48px;margin-bottom:12px">📐</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:6px">${name}</div>
+        <div style="font-size:12px;margin-bottom:16px">Archivo ${ext.toUpperCase()} · ${sizeKB} KB</div>
+        <div style="font-size:13px;max-width:480px;line-height:1.5">
+          Los archivos <b>${ext.toUpperCase()}</b> no se pueden previsualizar directamente en el navegador.
+          Conviértelo a <b>SVG</b> (desde AutoCAD: <i>Exportar → SVG</i>, o usa un convertidor online)
+          y vuelve a cargarlo aquí.
+        </div>
+      </div>`;
+    window._pidCurrentFile = name;
+    if (label) label.textContent = name + ' (DWG)';
+    if (typeof window.showNotif === 'function') {
+      window.showNotif(`DWG cargado: previsualización no disponible. Convierte a SVG.`, 'warning');
+    }
+
+  } else {
+    if (typeof window.showNotif === 'function') {
+      window.showNotif(`Formato .${ext} no soportado. Usa .svg o .dwg`, 'danger');
+    }
+  }
+};
+
 // ─── INIT ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Comprobar si hay SVGs disponibles al iniciar
-  const svgs = await window.listPIDSVGs();
-
   const tab = document.getElementById('tab-process');
   if (!tab) return;
 
-  // Añadir botón "Cargar P&ID" en la toolbar del tab proceso
   const toolbar = document.getElementById('pidToolbar');
   if (toolbar) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-sm';
-    btn.style.cssText = 'border:1px solid var(--border-default);color:var(--text-secondary);background:transparent;font-size:12px;display:flex;align-items:center;gap:6px';
-    btn.innerHTML = '📐 Cargar P&ID SVG';
-    btn.onclick = window.openPIDModal;
-    toolbar.prepend(btn);
-  }
+    // Input file oculto (acepta SVG y DWG/DXF)
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.svg,.dwg,.dxf,image/svg+xml';
+    fileInput.style.display = 'none';
+    fileInput.id = 'pidLocalFileInput';
+    fileInput.addEventListener('change', e => {
+      const f = e.target.files?.[0];
+      if (f) window.loadPIDFromLocalFile(f);
+      e.target.value = '';
+    });
+    document.body.appendChild(fileInput);
 
-  // Si hay SVG disponibles, cargar el primero automáticamente
-  if (svgs.length > 0) {
+    // Botón "Subir P&ID" (carga local desde el equipo del usuario)
+    const uploadBtn = document.createElement('button');
+    uploadBtn.className = 'btn btn-sm';
+    uploadBtn.style.cssText = 'border:1px solid var(--accent-cyan,#00d4ff);color:var(--accent-cyan,#00d4ff);background:transparent;font-size:12px;display:flex;align-items:center;gap:6px;margin-right:6px';
+    uploadBtn.innerHTML = '📤 Subir P&ID (.svg / .dwg)';
+    uploadBtn.onclick = () => fileInput.click();
+    toolbar.prepend(uploadBtn);
+
+    // Drag & drop sobre el contenedor del P&ID
     const container = document.getElementById('pidContainer');
     if (container) {
-      // Cargar cuando el tab sea visible
+      container.addEventListener('dragover', e => {
+        e.preventDefault();
+        container.style.outline = '2px dashed var(--accent-cyan,#00d4ff)';
+      });
+      container.addEventListener('dragleave', () => { container.style.outline = ''; });
+      container.addEventListener('drop', e => {
+        e.preventDefault();
+        container.style.outline = '';
+        const f = e.dataTransfer?.files?.[0];
+        if (f) window.loadPIDFromLocalFile(f);
+      });
+    }
+  }
+
+  // Intento opcional de listar SVGs del backend (si existe)
+  try {
+    const svgs = await window.listPIDSVGs();
+    if (svgs.length > 0) {
       const tabObserver = new MutationObserver(() => {
         if (tab.style.display !== 'none') {
           window.loadPIDSVG(svgs[0].name);
@@ -182,5 +265,5 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       tabObserver.observe(tab, { attributes: true, attributeFilter: ['style'] });
     }
-  }
+  } catch {}
 });
