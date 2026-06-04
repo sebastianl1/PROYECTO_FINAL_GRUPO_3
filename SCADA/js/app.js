@@ -151,7 +151,7 @@ window.showTab = function(tabId) {
   if (pageTitleEl) {
     const titles = {
       dashboard: 'Dashboard Principal', process: 'Proceso P&ID',
-      alarms: 'Alarmas', historics: 'Históricos', '3d': 'Vista 3D',
+      alarms: 'Alarmas', historics: 'Históricos', '3d': 'HMI',
       calendar: 'Calendario', ai: 'IA & Predicción', config: 'Configuración del Sistema',
       notifications: 'Notificaciones', files: 'Archivos', docs: 'Documental'
     };
