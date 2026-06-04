@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const toolbar = document.getElementById('pidToolbar');
   if (toolbar) {
     // Input file oculto (acepta SVG y DWG/DXF)
-    const fileInput = document.createElement('input');
+    const fileInput = document.getElementById('pidLocalFileInput') || document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.svg,.dwg,.dxf,image/svg+xml';
     fileInput.style.display = 'none';
@@ -226,15 +226,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (f) window.loadPIDFromLocalFile(f);
       e.target.value = '';
     });
-    document.body.appendChild(fileInput);
+    if (!fileInput.parentElement) document.body.appendChild(fileInput);
 
     // Botón "Subir P&ID" (carga local desde el equipo del usuario)
-    const uploadBtn = document.createElement('button');
+    const uploadBtn = document.getElementById('pidLocalUploadBtn') || document.createElement('button');
     uploadBtn.className = 'btn btn-sm';
     uploadBtn.style.cssText = 'border:1px solid var(--accent-cyan,#00d4ff);color:var(--accent-cyan,#00d4ff);background:transparent;font-size:12px;display:flex;align-items:center;gap:6px;margin-right:6px';
     uploadBtn.innerHTML = '📤 Subir P&ID (.svg / .dwg)';
     uploadBtn.onclick = () => fileInput.click();
-    toolbar.prepend(uploadBtn);
+    if (!uploadBtn.parentElement) toolbar.prepend(uploadBtn);
 
     // Drag & drop sobre el contenedor del P&ID
     const container = document.getElementById('pidContainer');
