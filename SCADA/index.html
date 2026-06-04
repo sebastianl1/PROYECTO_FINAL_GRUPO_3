@@ -391,9 +391,11 @@
       <div class="panel-title">Proceso Principal — <span id="pidLabel">Línea A</span></div>
       <div class="panel-badge live">● EN LÍNEA</div>
       <div class="panel-spacer"></div>
+      <button id="pidLocalUploadBtn" class="btn btn-sm" style="border:1px solid var(--accent-cyan,#00d4ff);color:var(--accent-cyan,#00d4ff);background:transparent;font-size:12px;display:flex;align-items:center;gap:6px;margin-right:6px">📤 Subir P&amp;ID (.svg / .dwg)</button>
       <button id="pidResetZoom" class="btn btn-sm" style="border:1px solid var(--border-default);color:var(--text-secondary);background:transparent;font-size:11px;margin-right:8px">Reset Zoom</button>
       <div class="panel-action">⤢</div>
     </div>
+    <input id="pidLocalFileInput" type="file" accept=".svg,.dwg,.dxf,image/svg+xml" style="display:none">
     <div id="pidContainer" style="padding:4px;overflow:hidden;min-height:340px;position:relative;background:var(--bg-deep)">
       <!-- SVG o canvas cargado dinámicamente por pid-manager.js -->
       <canvas id="pidCanvas" width="900" height="340" style="width:100%;border-radius:8px;background:var(--bg-deep)"></canvas>
@@ -1502,6 +1504,168 @@
   <script src="js/calendar-manager.js"></script>
   <script src="js/alarm-manager.js"></script>
   <script src="js/notifications-manager.js"></script>
+  <script>
+    (function() {
+      function addLocalSVGPanZoom(svg) {
+        let scale = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        svg.style.cursor = 'grab';
+        svg.style.transition = 'transform 0.05s ease';
+
+        function apply() {
+          svg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        if (!svg.dataset.localPidPanZoomBound) {
+          svg.dataset.localPidPanZoomBound = 'true';
+          svg.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            scale = Math.max(0.2, Math.min(5, scale * (e.deltaY > 0 ? 0.9 : 1.1)));
+            apply();
+          }, { passive: false });
+
+          svg.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            svg.style.cursor = 'grabbing';
+          });
+
+          window.addEventListener('mouseup', function() {
+            isDragging = false;
+            svg.style.cursor = 'grab';
+          });
+
+          window.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            panX += e.clientX - lastX;
+            panY += e.clientY - lastY;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            apply();
+          });
+        }
+      }
+
+      if (typeof window.loadPIDFromLocalFile !== 'function') {
+        window.loadPIDFromLocalFile = function(file) {
+          if (!file) return;
+          const container = document.getElementById('pidContainer');
+          if (!container) return;
+
+          const name = file.name || 'archivo';
+          const ext = name.split('.').pop().toLowerCase();
+          const label = document.getElementById('pidLabel');
+
+          if (ext === 'svg') {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              container.innerHTML = e.target.result;
+              const svgEl = container.querySelector('svg');
+              if (!svgEl) {
+                container.innerHTML = '<div style="padding:24px;color:var(--danger,#dc3545)">El archivo no contiene un &lt;svg&gt; válido.</div>';
+                return;
+              }
+              svgEl.style.width = '100%';
+              svgEl.style.height = '100%';
+              svgEl.style.maxHeight = 'calc(100vh - 200px)';
+              svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+              addLocalSVGPanZoom(svgEl);
+              if (label) label.textContent = name;
+              if (typeof window.showNotif === 'function') window.showNotif(`P&ID "${name}" cargado`, 'success');
+            };
+            reader.onerror = function() {
+              if (typeof window.showNotif === 'function') window.showNotif('Error leyendo el archivo', 'danger');
+            };
+            reader.readAsText(file);
+            return;
+          }
+
+          if (ext === 'dwg' || ext === 'dxf') {
+            const sizeKB = (file.size / 1024).toFixed(1);
+            container.innerHTML = `
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:340px;padding:32px;text-align:center;color:var(--text-secondary)">
+                <div style="font-size:48px;margin-bottom:12px">📐</div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:6px">${name}</div>
+                <div style="font-size:12px;margin-bottom:16px">Archivo ${ext.toUpperCase()} · ${sizeKB} KB</div>
+                <div style="font-size:13px;max-width:480px;line-height:1.5">
+                  Los archivos <b>${ext.toUpperCase()}</b> no se pueden previsualizar directamente en el navegador.
+                  Conviértelo a <b>SVG</b> y vuelve a cargarlo aquí.
+                </div>
+              </div>`;
+            if (label) label.textContent = `${name} (${ext.toUpperCase()})`;
+            if (typeof window.showNotif === 'function') window.showNotif('DWG cargado: previsualización no disponible. Convierte a SVG.', 'warning');
+            return;
+          }
+
+          if (typeof window.showNotif === 'function') window.showNotif(`Formato .${ext} no soportado. Usa .svg o .dwg`, 'danger');
+        };
+      }
+
+      function ensurePIDLocalUploadControls() {
+        const toolbar = document.getElementById('pidToolbar');
+        const container = document.getElementById('pidContainer');
+        const fileInput = document.getElementById('pidLocalFileInput');
+        if (!toolbar || !fileInput) return;
+
+        const uploadLikeButtons = Array.from(toolbar.querySelectorAll('button')).filter(function(btn) {
+          const text = (btn.textContent || '').toLowerCase();
+          return text.includes('subir p&id') || text.includes('cargar p&id svg');
+        });
+
+        const primaryButton = document.getElementById('pidLocalUploadBtn') || uploadLikeButtons[0];
+        if (primaryButton) {
+          primaryButton.id = 'pidLocalUploadBtn';
+          primaryButton.innerHTML = '📤 Subir P&amp;ID (.svg / .dwg)';
+          primaryButton.type = 'button';
+          primaryButton.onclick = function() { fileInput.click(); };
+        }
+
+        uploadLikeButtons.slice(1).forEach(function(btn) { btn.remove(); });
+
+        if (fileInput && !fileInput.dataset.boundPidUpload) {
+          fileInput.dataset.boundPidUpload = 'true';
+          fileInput.addEventListener('change', function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (file) window.loadPIDFromLocalFile(file);
+            e.target.value = '';
+          });
+        }
+
+        if (container && !container.dataset.boundPidDropzone) {
+          container.dataset.boundPidDropzone = 'true';
+          container.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            container.style.outline = '2px dashed var(--accent-cyan,#00d4ff)';
+          });
+          container.addEventListener('dragleave', function() {
+            container.style.outline = '';
+          });
+          container.addEventListener('drop', function(e) {
+            e.preventDefault();
+            container.style.outline = '';
+            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (file) window.loadPIDFromLocalFile(file);
+          });
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          ensurePIDLocalUploadControls();
+          setTimeout(ensurePIDLocalUploadControls, 150);
+        });
+      } else {
+        ensurePIDLocalUploadControls();
+        setTimeout(ensurePIDLocalUploadControls, 150);
+      }
+    })();
+  </script>
   <!-- i18n + login (generado por Webpack) -->
   <script src="js/dashboard-manager.js"></script>
   <script src="js/historicos-manager.js"></script>
