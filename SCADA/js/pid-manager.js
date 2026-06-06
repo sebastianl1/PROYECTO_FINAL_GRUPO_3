@@ -45,6 +45,8 @@ window.loadPIDSVG = async function(filename) {
       svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       // Añadir pan/zoom básico con rueda del ratón y drag
       _addSVGPanZoom(svgEl);
+      // Detectar y enlazar hotspots con variables
+      _wireSVGHotspots(svgEl);
     }
 
     window._pidCurrentFile = filename;
