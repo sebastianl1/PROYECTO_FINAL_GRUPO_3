@@ -541,7 +541,30 @@ function onMouseClick(){
     const label=document.getElementById('selectedLabel');
     if(label) label.textContent='● '+name;
     showNotif(`Seleccionado: ${name}`,'info');
+    // Publicar al bus de integración (P&ID/Dashboard escuchan)
+    if (window.scadaBus) {
+      window.scadaBus.emit('tag:select', { tag: name, source: 'hmi' });
+    }
   }
+}
+
+// ─── Escuchar tag:focus para resaltar objeto 3D ───
+if (window.scadaBus) {
+  window.scadaBus.on('tag:focus', ({ tag, varId }) => {
+    if (!window.threeObjects) return;
+    const needle = String(tag || varId || '').toLowerCase();
+    const obj = window.threeObjects.find(o =>
+      o.userData && o.userData.name &&
+      o.userData.name.toLowerCase().includes(needle)
+    );
+    if (!obj || !obj.material) return;
+    const mat = obj.material;
+    const prev = mat.emissive ? mat.emissive.getHex() : null;
+    if (mat.emissive) {
+      mat.emissive.setHex(0x22c55e);
+      setTimeout(() => { if (prev !== null) mat.emissive.setHex(prev); }, 1800);
+    }
+  });
 }
 
 function resetCamera(){

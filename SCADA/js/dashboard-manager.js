@@ -432,7 +432,8 @@ async function _createWidget(type, cfg, wid, span) {
   const panel = document.createElement('div');
   panel.className = 'panel fade-in';
   panel.dataset.wid = wid;
-  panel.style.cssText = `grid-column:${span};transition:grid-column 0.25s;position:relative`;
+  panel.dataset.varId = v1.id;
+  panel.style.cssText = `grid-column:${span};transition:grid-column 0.25s,box-shadow .3s,outline-color .3s;position:relative`;
 
   // Obtener datos iniciales (API o sim)
   let hist = { labels:[], data:[] };
@@ -447,10 +448,20 @@ async function _createWidget(type, cfg, wid, span) {
   const titleTxt = cfg.title || typeDef.label;
 
   header.innerHTML = `
-    <div class="panel-title dm-title">${titleTxt}</div>
-    <span class="dm-badge" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--text-muted);margin-left:8px">${v1.tag}·${v1.unit}</span>
+    <div class="panel-title dm-title" style="cursor:pointer" title="Click: ver tag en P&ID / HMI">${titleTxt}</div>
+    <span class="dm-badge" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--text-muted);margin-left:8px;cursor:pointer" title="Click: ver tag en P&ID / HMI">${v1.tag}·${v1.unit}</span>
     <div class="panel-badge live" style="margin-left:8px">● LIVE</div>
     <div class="panel-spacer"></div>`;
+
+  // Click en título o badge → emitir tag:select
+  if (window.scadaBus) {
+    const emit = (e) => {
+      e.stopPropagation();
+      window.scadaBus.emit('tag:select', { varId: v1.id, tag: v1.tag, source: 'dashboard' });
+    };
+    header.querySelector('.dm-title')?.addEventListener('click', emit);
+    header.querySelector('.dm-badge')?.addEventListener('click', emit);
+  }
 
   const menuBtn = document.createElement('button');
   menuBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px 6px;display:flex;align-items:center;border-radius:6px;transition:background 0.15s;position:relative';
@@ -1067,3 +1078,26 @@ document.addEventListener('DOMContentLoaded', ()=>{
   _load();
   _startLive();
 });
+
+// ─── Integración con scadaBus: resaltar widget al recibir tag:focus ───
+if (window.scadaBus) {
+  window.scadaBus.on('tag:focus', ({ varId }) => {
+    const grid = document.getElementById('activeWidgetsGrid');
+    if (!grid) return;
+    const panels = grid.querySelectorAll(`[data-var-id="${varId}"], .panel[data-wid]`);
+    let highlighted = 0;
+    panels.forEach(p => {
+      const pid = p.dataset.varId;
+      if (pid && pid === varId) {
+        p.style.outline = '2px solid #22c55e';
+        p.style.boxShadow = '0 0 0 4px rgba(34,197,94,0.18)';
+        if (highlighted === 0) p.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlighted++;
+        setTimeout(() => {
+          p.style.outline = '';
+          p.style.boxShadow = '';
+        }, 2200);
+      }
+    });
+  });
+}
