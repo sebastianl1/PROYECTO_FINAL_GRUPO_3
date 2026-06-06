@@ -173,6 +173,7 @@ window.loadPIDFromLocalFile = function(file) {
         svgEl.style.maxHeight = 'calc(100vh - 200px)';
         svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         _addSVGPanZoom(svgEl);
+        _wireSVGHotspots(svgEl);
       } else {
         container.innerHTML = `<div style="padding:24px;color:var(--danger,#dc3545)">El archivo no contiene un &lt;svg&gt; válido.</div>`;
       }
