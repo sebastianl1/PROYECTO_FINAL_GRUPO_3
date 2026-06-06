@@ -1078,3 +1078,26 @@ document.addEventListener('DOMContentLoaded', ()=>{
   _load();
   _startLive();
 });
+
+// ─── Integración con scadaBus: resaltar widget al recibir tag:focus ───
+if (window.scadaBus) {
+  window.scadaBus.on('tag:focus', ({ varId }) => {
+    const grid = document.getElementById('activeWidgetsGrid');
+    if (!grid) return;
+    const panels = grid.querySelectorAll(`[data-var-id="${varId}"], .panel[data-wid]`);
+    let highlighted = 0;
+    panels.forEach(p => {
+      const pid = p.dataset.varId;
+      if (pid && pid === varId) {
+        p.style.outline = '2px solid #22c55e';
+        p.style.boxShadow = '0 0 0 4px rgba(34,197,94,0.18)';
+        if (highlighted === 0) p.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlighted++;
+        setTimeout(() => {
+          p.style.outline = '';
+          p.style.boxShadow = '';
+        }, 2200);
+      }
+    });
+  });
+}
