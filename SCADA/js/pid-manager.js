@@ -270,3 +270,73 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch {}
 });
+
+// ─── HOTSPOTS: vincular elementos SVG con variables ───────────────
+function _wireSVGHotspots(svg) {
+  if (!svg || !window.scadaBus) return;
+  const vars = (window.variableManager && window.variableManager.variables) || [];
+  if (!vars.length) return;
+
+  // Indexar variables por id y por tag normalizado
+  const byKey = new Map();
+  vars.forEach(v => {
+    if (v.id)  byKey.set(v.id.toLowerCase(), v);
+    if (v.tag) byKey.set(v.tag.toLowerCase().replace(/\s+/g, '_'), v);
+    if (v.tag) byKey.set(v.tag.toLowerCase(), v);
+  });
+
+  const matched = [];
+  const all = svg.querySelectorAll('*');
+  all.forEach(el => {
+    const candidates = [
+      el.getAttribute('data-tag'),
+      el.getAttribute('data-var'),
+      el.id,
+      el.getAttribute('inkscape:label'),
+    ].filter(Boolean);
+    for (const c of candidates) {
+      const norm = String(c).toLowerCase().replace(/\s+/g, '_');
+      const v = byKey.get(norm) || byKey.get(String(c).toLowerCase());
+      if (v) {
+        el.setAttribute('data-scada-var', v.id);
+        el.style.cursor = 'pointer';
+        el.addEventListener('mouseenter', () => {
+          el.dataset._prevStroke = el.style.stroke;
+          el.dataset._prevSW = el.style.strokeWidth;
+          el.style.stroke = '#22c55e';
+          el.style.strokeWidth = '3';
+        });
+        el.addEventListener('mouseleave', () => {
+          el.style.stroke = el.dataset._prevStroke || '';
+          el.style.strokeWidth = el.dataset._prevSW || '';
+        });
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          window.scadaBus.emit('tag:select', { varId: v.id, tag: v.tag, source: 'pid' });
+        });
+        matched.push(v.id);
+        break;
+      }
+    }
+  });
+
+  if (matched.length && typeof window.showNotif === 'function') {
+    window.showNotif(`P&ID: ${matched.length} tag(s) interactivo(s) detectado(s)`, 'info');
+  }
+}
+window._wireSVGHotspots = _wireSVGHotspots;
+
+// Resaltado por bus
+if (window.scadaBus) {
+  window.scadaBus.on('tag:focus', ({ varId }) => {
+    const container = document.getElementById('pidContainer');
+    if (!container) return;
+    const el = container.querySelector(`[data-scada-var="${varId}"]`);
+    if (!el) return;
+    const prev = el.style.filter;
+    el.style.transition = 'filter .3s';
+    el.style.filter = 'drop-shadow(0 0 6px #22c55e) drop-shadow(0 0 12px #22c55e)';
+    setTimeout(() => { el.style.filter = prev || ''; }, 1800);
+  });
+}
