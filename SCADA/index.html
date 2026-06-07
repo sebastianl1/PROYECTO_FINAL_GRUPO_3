@@ -19,66 +19,111 @@
   <!-- Estilos propios del SCADA (cargados directamente) -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/scada-core.css">
+  <!-- Login responsive styles — lightweight -->
+  <style>
+    .login-left-panel { display:none; }
+    @media (min-width: 900px) {
+      .login-left-panel { display:flex !important; }
+      .login-mobile-brand { display:none !important; }
+    }
+  </style>
 </head>
 
 <body>
-  <!-- LOGIN MODAL -->
-  <div id="loginModal" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg-base,#0d1117);z-index:9999">
-    <div style="width:100%;max-width:400px;padding:0 20px">
+  <!-- LOGIN MODAL — Modern split-screen with SENA branding -->
+  <div id="loginModal" style="position:fixed;inset:0;display:flex;z-index:9999;font-family:'Inter',sans-serif">
 
-      <!-- Logo + título -->
-      <div style="text-align:center;margin-bottom:32px">
-        <div style="width:52px;height:52px;background:linear-gradient(135deg,var(--primary,#638bff),#a78bfa);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-weight:800;font-size:20px;color:#fff;font-family:'Rajdhani',sans-serif;box-shadow:0 0 24px rgba(99,139,255,0.35)">SPy</div>
-        <h2 style="font-size:24px;font-weight:800;color:var(--text-primary,#e2e8f0);margin:0 0 4px"><span style="color:var(--primary,#638bff)">SPy</span> v1.0</h2>
-        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--text-muted,#64748b);margin:0" data-i18n="login.subtitle">SISTEMA DE CONTROL INDUSTRIAL SPy v1.0</p>
-      </div>
+    <!-- Left panel: SENA branding & background image -->
+    <div class="login-left-panel" style="flex:1.15;position:relative;overflow:hidden;align-items:center">
+      <img src="assets/sena-bg.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" alt="SENA instalaciones">
+      <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(0,120,60,0.82) 0%,rgba(0,80,40,0.88) 60%,rgba(0,50,25,0.92) 100%)"></div>
 
-      <!-- Campos integrados en una sola tarjeta -->
-      <div style="background:var(--bg-card,#161b27);border:1px solid var(--border,rgba(255,255,255,0.08));border-radius:16px;overflow:hidden">
-
-        <!-- Usuario -->
-        <div style="display:flex;align-items:center;border-bottom:1px solid var(--border,rgba(255,255,255,0.08));padding:0 16px;gap:12px">
-          <i data-feather="user" style="width:15px;height:15px;color:var(--text-muted,#64748b);flex-shrink:0"></i>
-          <input type="text" id="loginUser" placeholder="Usuario"
-            style="flex:1;background:transparent;border:none;outline:none;padding:16px 0;font-size:14px;color:var(--text-primary,#e2e8f0);font-family:'Inter',sans-serif;caret-color:var(--primary,#638bff)"
-            data-i18n-placeholder="">
+      <div style="position:relative;z-index:1;width:100%;padding:60px 50px;display:flex;flex-direction:column;justify-content:center;color:#fff;box-sizing:border-box">
+        <!-- SENA Logo mark -->
+        <div style="margin-bottom:36px">
+          <div style="width:72px;height:72px;background:rgba(255,255,255,0.12);border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:28px;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.22);box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+            <!-- SENA-like human figure icon -->
+            <svg width="38" height="38" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="25" cy="13" r="7" fill="white"/>
+              <path d="M25 22C25 22 14 26 14 36V44H17V38C17 34 20 30 25 30C30 30 33 34 33 38V44H36V36C36 26 25 22 25 22Z" fill="white"/>
+            </svg>
+          </div>
+          <h1 style="font-size:44px;font-weight:800;margin:0 0 10px;line-height:1.1;letter-spacing:-0.5px">SENA</h1>
+          <p style="font-size:18px;font-weight:500;margin:0;opacity:0.92">Servicio Nacional de Aprendizaje</p>
+          <div style="width:48px;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-top:20px"></div>
         </div>
 
-        <!-- Contraseña — UN SOLO ojo, sin value predeterminado -->
-        <div style="display:flex;align-items:center;padding:0 16px;gap:12px">
-          <i data-feather="lock" style="width:15px;height:15px;color:var(--text-muted,#64748b);flex-shrink:0"></i>
-          <input type="password" id="loginPass" placeholder="Contraseña"
-            style="flex:1;background:transparent;border:none;outline:none;padding:16px 0;font-size:14px;color:var(--text-primary,#e2e8f0);font-family:'Inter',sans-serif;caret-color:var(--primary,#638bff)"
-            data-i18n-placeholder="">
-          <!-- UN solo botón de ojo — sin autocomplete browser eye -->
-          <button type="button" id="togglePassword"
-            onclick="(function(){const p=document.getElementById('loginPass');const show=p.type==='password';p.type=show?'text':'password';const ic=document.getElementById('eyeIcon');ic.setAttribute('data-feather',show?'eye-off':'eye');feather.replace();})()"
-            style="background:none;border:none;padding:4px;cursor:pointer;color:var(--text-muted,#64748b);display:flex;align-items:center;flex-shrink:0;transition:color 0.15s"
-            onmouseover="this.style.color='var(--text-primary,#e2e8f0)'"
-            onmouseout="this.style.color='var(--text-muted,#64748b)'">
-            <i data-feather="eye" id="eyeIcon" style="width:15px;height:15px;pointer-events:none"></i>
-          </button>
+        <div style="margin-top:auto;opacity:0.85;font-size:13px;line-height:1.7">
+          <p style="margin:0 0 6px;font-weight:600;letter-spacing:0.05em">SISTEMA DE CONTROL INDUSTRIAL</p>
+          <p style="margin:0 0 16px;opacity:0.75">SCADA SPy v1.0 — Monitoreo y supervisión de procesos industriales en tiempo real.</p>
+          <p style="margin:0;opacity:0.6;font-size:11px">Proyecto de formación tecnológica · Grupo 3</p>
         </div>
-
       </div>
-
-      <!-- Botón -->
-      <button onclick="doLogin()"
-        style="width:100%;margin-top:12px;padding:15px;background:var(--primary,#638bff);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.04em;transition:all 0.2s;box-shadow:0 4px 20px rgba(99,139,255,0.3)"
-        onmouseover="this.style.background='#7a9eff';this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 24px rgba(99,139,255,0.45)'"
-        onmouseout="this.style.background='var(--primary,#638bff)';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(99,139,255,0.3)'">
-        <i data-feather="log-in" style="width:16px;height:16px;pointer-events:none"></i>
-        <span data-i18n="login.btn">INICIAR SESIÓN</span>
-      </button>
-
-      <!-- Select planta oculto — en el DOM para compatibilidad con doLogin() -->
-      <select id="loginPlant" style="display:none">
-        <option>PLANTA_01 — Refinería Norte</option>
-        <option>PLANTA_02 — Subestación Central</option>
-        <option>PLANTA_03 — Agua Potable Sur</option>
-      </select>
-
     </div>
+
+    <!-- Right panel: Login form -->
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg-base,#0d1117);position:relative;min-width:360px">
+      <div style="width:100%;max-width:400px;padding:36px 28px">
+
+        <!-- Mobile SENA branding (hidden on desktop) -->
+        <div class="login-mobile-brand" style="text-align:center;margin-bottom:28px">
+          <div style="width:56px;height:56px;background:linear-gradient(135deg,#00A651,#008f45);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 4px 20px rgba(0,166,81,0.25)">
+            <svg width="28" height="28" viewBox="0 0 50 50" fill="none">
+              <circle cx="25" cy="13" r="7" fill="white"/>
+              <path d="M25 22C25 22 14 26 14 36V44H17V38C17 34 20 30 25 30C30 30 33 34 33 38V44H36V36C36 26 25 22 25 22Z" fill="white"/>
+            </svg>
+          </div>
+          <h2 style="font-size:20px;font-weight:700;color:var(--text-primary,#e2e8f0);margin:0 0 3px">SENA</h2>
+          <p style="font-size:12px;color:var(--text-muted,#64748b);margin:0">Servicio Nacional de Aprendizaje</p>
+        </div>
+
+        <h3 style="font-size:26px;font-weight:700;color:var(--text-primary,#e2e8f0);margin:0 0 6px">Bienvenido</h3>
+        <p style="font-size:13px;color:var(--text-muted,#64748b);margin:0 0 28px">Ingresa tus credenciales para acceder al sistema SCADA</p>
+
+        <!-- Campos integrados -->
+        <div style="background:var(--bg-card,#161b27);border:1px solid var(--border,rgba(255,255,255,0.08));border-radius:14px;overflow:hidden;margin-bottom:14px">
+          <div style="display:flex;align-items:center;border-bottom:1px solid var(--border,rgba(255,255,255,0.08));padding:0 14px;gap:10px">
+            <i data-feather="user" style="width:15px;height:15px;color:var(--text-muted,#64748b);flex-shrink:0"></i>
+            <input type="text" id="loginUser" placeholder="Usuario"
+              style="flex:1;background:transparent;border:none;outline:none;padding:15px 0;font-size:14px;color:var(--text-primary,#e2e8f0);font-family:'Inter',sans-serif;caret-color:#00A651"
+              data-i18n-placeholder="">
+          </div>
+          <div style="display:flex;align-items:center;padding:0 14px;gap:10px">
+            <i data-feather="lock" style="width:15px;height:15px;color:var(--text-muted,#64748b);flex-shrink:0"></i>
+            <input type="password" id="loginPass" placeholder="Contraseña"
+              style="flex:1;background:transparent;border:none;outline:none;padding:15px 0;font-size:14px;color:var(--text-primary,#e2e8f0);font-family:'Inter',sans-serif;caret-color:#00A651"
+              data-i18n-placeholder="">
+            <button type="button" id="togglePassword"
+              onclick="(function(){const p=document.getElementById('loginPass');const show=p.type==='password';p.type=show?'text':'password';const ic=document.getElementById('eyeIcon');ic.setAttribute('data-feather',show?'eye-off':'eye');feather.replace();})()"
+              style="background:none;border:none;padding:4px;cursor:pointer;color:var(--text-muted,#64748b);display:flex;align-items:center;flex-shrink:0;transition:color 0.15s"
+              onmouseover="this.style.color='var(--text-primary,#e2e8f0)'"
+              onmouseout="this.style.color='var(--text-muted,#64748b)'">
+              <i data-feather="eye" id="eyeIcon" style="width:15px;height:15px;pointer-events:none"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botón SENA green -->
+        <button onclick="doLogin()"
+          style="width:100%;padding:14px;background:linear-gradient(135deg,#00A651,#008f45);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.04em;transition:all 0.2s;box-shadow:0 4px 20px rgba(0,166,81,0.25)"
+          onmouseover="this.style.background='linear-gradient(135deg,#00b85c,#00A651)';this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 24px rgba(0,166,81,0.4)'"
+          onmouseout="this.style.background='linear-gradient(135deg,#00A651,#008f45)';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(0,166,81,0.25)'">
+          <i data-feather="log-in" style="width:16px;height:16px;pointer-events:none"></i>
+          <span data-i18n="login.btn">INICIAR SESIÓN</span>
+        </button>
+
+        <p style="text-align:center;margin-top:22px;font-size:11px;color:var(--text-muted,#64748b);letter-spacing:0.02em">
+          Sistema de Control Industrial SPy v1.0 — Grupo 3
+        </p>
+      </div>
+    </div>
+
+    <!-- Select planta oculto — compatibilidad con doLogin() -->
+    <select id="loginPlant" style="display:none">
+      <option>PLANTA_01 — Refinería Norte</option>
+      <option>PLANTA_02 — Subestación Central</option>
+      <option>PLANTA_03 — Agua Potable Sur</option>
+    </select>
   </div>
 
   <!-- WRAPPER -->
