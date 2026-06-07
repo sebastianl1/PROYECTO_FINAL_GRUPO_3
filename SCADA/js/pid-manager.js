@@ -239,6 +239,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     uploadBtn.onclick = () => fileInput.click();
     if (!uploadBtn.parentElement) toolbar.prepend(uploadBtn);
 
+    // Botón "Modelos 3D" — gestiona/elimina archivos .glb desde el P&ID
+    if (!document.getElementById('pidGLBManageBtn')) {
+      const glbBtn = document.createElement('button');
+      glbBtn.id = 'pidGLBManageBtn';
+      glbBtn.className = 'btn btn-sm';
+      glbBtn.style.cssText = 'border:1px solid var(--border);color:var(--text-secondary);background:transparent;font-size:12px;display:flex;align-items:center;gap:6px;margin-right:6px';
+      glbBtn.innerHTML = '📦 Modelos 3D';
+      glbBtn.title = 'Gestionar / eliminar modelos .glb';
+      glbBtn.onclick = () => window.openGLBModal && window.openGLBModal();
+      toolbar.prepend(glbBtn);
+    }
+
     // Drag & drop sobre el contenedor del P&ID
     const container = document.getElementById('pidContainer');
     if (container) {
