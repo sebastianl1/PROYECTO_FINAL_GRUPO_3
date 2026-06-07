@@ -210,9 +210,23 @@ window.openGLBModal = async function() {
 document.addEventListener('DOMContentLoaded', () => {
   const toolbar3D = document.getElementById('toolbar3D');
   if (toolbar3D) {
+    // Botón "Subir GLB" (sube directo al servidor en /models)
+    const upInput = document.createElement('input');
+    upInput.type = 'file';
+    upInput.accept = '.glb,model/gltf-binary';
+    upInput.style.display = 'none';
+    upInput.onchange = e => { const f = e.target.files?.[0]; if (f) window.uploadGLBFile(f); e.target.value=''; };
+    document.body.appendChild(upInput);
+
+    const upBtn = document.createElement('button');
+    upBtn.style.cssText = 'display:flex;align-items:center;gap:6px;background:var(--primary,#3b82f6);border:1px solid var(--primary,#3b82f6);color:#fff;border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:Inter,sans-serif;margin-right:4px';
+    upBtn.innerHTML = '📤 Subir GLB';
+    upBtn.onclick = () => upInput.click();
+    toolbar3D.prepend(upBtn);
+
     const btn = document.createElement('button');
     btn.style.cssText = 'display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--border);color:var(--text-secondary);border-radius:7px;padding:5px 11px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;font-family:Inter,sans-serif;margin-right:4px';
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg> Modelo GLB';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg> Modelos GLB';
     btn.onmouseover = () => { btn.style.borderColor='var(--primary)'; btn.style.color='var(--primary)'; };
     btn.onmouseout  = () => { btn.style.borderColor='var(--border)';  btn.style.color='var(--text-secondary)'; };
     btn.onclick = window.openGLBModal;
