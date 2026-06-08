@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       glbBtn.id = 'pidGLBManageBtn';
       glbBtn.className = 'btn btn-sm';
       glbBtn.style.cssText = 'border:1px solid var(--border);color:var(--text-secondary);background:transparent;font-size:12px;display:flex;align-items:center;gap:6px;margin-right:6px';
-      glbBtn.innerHTML = '📦 Modelos 3D';
+      glbBtn.innerHTML = 'OPERACIONES UNITARIAS';
       glbBtn.title = 'Gestionar / eliminar modelos .glb';
       glbBtn.onclick = () => window.openGLBModal && window.openGLBModal();
       toolbar.prepend(glbBtn);
